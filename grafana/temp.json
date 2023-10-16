@@ -1,0 +1,242 @@
+{
+  "datasource": {
+    "uid": "$datasource"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "yellow",
+            "value": 0.8
+          },
+          {
+            "color": "red",
+            "value": 0.9
+          }
+        ]
+      },
+      "unit": "decbytes"
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Mounted on"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 260
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Size"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 93
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Used"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 72
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Available"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 88
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "Used, %"
+        },
+        "properties": [
+          {
+            "id": "unit",
+            "value": "percentunit"
+          },
+          {
+            "id": "custom.cellOptions",
+            "value": {
+              "type": "gauge",
+              "mode": "gradient"
+            }
+          },
+          {
+            "id": "max",
+            "value": 1
+          },
+          {
+            "id": "min",
+            "value": 0
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "x": 12,
+    "y": 17,
+    "w": 12,
+    "h": 7
+  },
+  "id": 7,
+  "targets": [
+    {
+      "expr": "max by (mountpoint) (node_filesystem_size_bytes{job=\"node-exporter\", instance=\"$instance\", fstype!=\"\", mountpoint!=\"\"})\n",
+      "format": "table",
+      "instant": true,
+      "intervalFactor": 2,
+      "legendFormat": "",
+      "refId": "A",
+      "datasource": {
+        "uid": "$datasource"
+      }
+    },
+    {
+      "expr": "max by (mountpoint) (node_filesystem_avail_bytes{job=\"node-exporter\", instance=\"$instance\", fstype!=\"\", mountpoint!=\"\"})\n",
+      "format": "table",
+      "instant": true,
+      "intervalFactor": 2,
+      "legendFormat": "",
+      "refId": "B",
+      "datasource": {
+        "uid": "$datasource"
+      }
+    }
+  ],
+  "title": "Disk Space Usage",
+  "transformations": [
+    {
+      "id": "groupBy",
+      "options": {
+        "fields": {
+          "Value #A": {
+            "aggregations": [
+              "lastNotNull"
+            ],
+            "operation": "aggregate"
+          },
+          "Value #B": {
+            "aggregations": [
+              "lastNotNull"
+            ],
+            "operation": "aggregate"
+          },
+          "mountpoint": {
+            "aggregations": [],
+            "operation": "groupby"
+          }
+        }
+      }
+    },
+    {
+      "id": "merge",
+      "options": {}
+    },
+    {
+      "id": "calculateField",
+      "options": {
+        "alias": "Used",
+        "binary": {
+          "left": "Value #A (lastNotNull)",
+          "operator": "-",
+          "reducer": "sum",
+          "right": "Value #B (lastNotNull)"
+        },
+        "mode": "binary",
+        "reduce": {
+          "reducer": "sum"
+        }
+      }
+    },
+    {
+      "id": "calculateField",
+      "options": {
+        "alias": "Used, %",
+        "binary": {
+          "left": "Used",
+          "operator": "/",
+          "reducer": "sum",
+          "right": "Value #A (lastNotNull)"
+        },
+        "mode": "binary",
+        "reduce": {
+          "reducer": "sum"
+        }
+      }
+    },
+    {
+      "id": "organize",
+      "options": {
+        "excludeByName": {},
+        "indexByName": {},
+        "renameByName": {
+          "Value #A (lastNotNull)": "Size",
+          "Value #B (lastNotNull)": "Available",
+          "mountpoint": "Mounted on"
+        }
+      }
+    },
+    {
+      "id": "sortBy",
+      "options": {
+        "fields": {},
+        "sort": [
+          {
+            "field": "Mounted on"
+          }
+        ]
+      }
+    }
+  ],
+  "type": "table",
+  "options": {
+    "showHeader": true,
+    "cellHeight": "sm",
+    "footer": {
+      "show": false,
+      "reducer": [
+        "sum"
+      ],
+      "countRows": false,
+      "fields": ""
+    }
+  },
+  "pluginVersion": "10.1.4"
+}
